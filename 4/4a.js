@@ -25,9 +25,7 @@ fs.readFile('4/DATA', 'utf8', function (err, contents) {
     var guardWithLargestCount;
     var guards = {};
     var result;
-    var addEntry = function(begins, fallsAsleep, wakesUp) {
-        
-        var guardEntry;
+    var addEntry = function(begins, fallsAsleep, wakesUp) {        
         var guardId = begins.split(" ")[3];
         var startMinutes = parseInt(fallsAsleep.split(" ")[1].slice(0, -1).split(":")[1]); 
         var endMinutes = parseInt(wakesUp.split(" ")[1].slice(0, -1).split(":")[1]); 
