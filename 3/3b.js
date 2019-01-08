@@ -22,7 +22,6 @@ fs.readFile('3/DATA', 'utf8', function (err, contents) {
         return box;
     }
 
-
     var hasOverlap = [];
     var processBox = function(matrixOut, boxIn) {        
 
