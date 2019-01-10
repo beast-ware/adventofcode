@@ -18,7 +18,7 @@ fs.readFile('5/DATA', 'utf8', function (err, contents) {
                 s.splice(i,1);
             } else if (b.toUpperCase() === removeChar) {
                 s.splice(i+1,1);
-            } else if (oppositePolarity(a, b)) {
+            } else if (oppositePolarity(a, b)) {                                                                                                                                       
                 s.splice(i, 2);
                 if (i > 0) {  i--; }
             } else {
