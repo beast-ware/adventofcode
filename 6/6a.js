@@ -13,8 +13,8 @@ fs.readFile('6/DATA', 'utf8', function (err, contents) {
             var point = {};
             point.id = i;
             var p = pointsRaw[i].split(",");
-            point.x = p[0];
-            point.y = p[1];
+            point.x = parseInt(p[0].trim());
+            point.y = parseInt(p[1].trim());
             if (point.x > points.largestX) {
                 points.largestX = point.x;
             }
@@ -22,66 +22,38 @@ fs.readFile('6/DATA', 'utf8', function (err, contents) {
                 points.largestY = point.y;
             }
             points.coords.push(point);
-            points.pointsRaw[pointsRaw[i]] = point; 
+            point.count = 0;
+            points.pointsRaw[point.x + "," + point.y] = point; 
         }
         points.isBoundry = function(x, y) {
-            return (x === points.largestX || y === points.largestY || x == 0 || y == 0)
+            return (x === points.largestX-1 || y === points.largestY-1 || x == 0 || y == 0)
         }
+        points.largestX = points.largestX + 1;
+        points.largestY = points.largestY + 1;
         return points;
     }
 
-    var copyObject = function(obj) {
-        var c = {};
-        for (var key in obj) {
-            // skip loop if the property is from prototype
-            if (!obj.hasOwnProperty(key)) continue;
-            c[key] = obj[key];
-        }
-        return c;
+    var initGrid = function(x, y){
+        var grid = Array(x).fill([]);
+        grid.forEach(function(e, i) {
+            grid[i] = Array(y).fill({});
+        })
+        return grid;
     }
 
     var processPoints = function(points) {
-        var grid ={};
-        grid.values = [];
-        grid.notInfinitePoints = copyObject(points.pointsRaw);
-
-        for (var x=0; x<points.largestX; x++) {
-            for (var y=0; y<points.largestY; y++) {
-                var g = {};
-                if (points.pointsRaw[x + "," + y]) {
-                    g.type = "prime";
-                    g.point = points.pointsRaw[x + "," + y];
-                    g.point.isInfinite = points.isBoundry(x, y);  
-                    g.displayVal = 'P';
-                } else {
-                    g.type = "calc";
-                    g.closestPoints = closestPrimes(x, y, points);
-                    g.isMultiple = g.closestPoints.points.length > 1;
-                    for (var i=0;i<g.closestPoints.points.length; i++) {
-                        var isInfinite = points.isBoundry(x, y);
-                        if (!g.closestPoints.points[i].isInfinite) {
-                            g.closestPoints.points[i].isInfinite = isInfinite
-                        } 
-                        if (isInfinite) {
-                            grid.notInfinitePoints[x + "," + y] = null;
-                        }
-                    }
-                    if (g.isMultiple) { 
-                        g.displayVal = "."; 
-                    } else {
-                        g.displayVal = g.closestPoints.points[0].x + "," + g.closestPoints.points[0].y; 
-                    }
-                    
-                }
-                grid.values.push(g);
+        var grid = initGrid(points.largestX, points.largestY);
+        
+        for (var y=0; y<points.largestY; y++) {
+            for (var x=0; x<points.largestX; x++) {
+                grid[x][y] = closestPrimes(x, y, points);
             }
         }
-        grid.points = points;
         return grid;
     }
 
     var manhattanDistance = function(x, y, point) {
-        return Math.abs(x-point.x) + Math.abs(y-point.y);
+        return Math.abs(point.x-x) + Math.abs(point.y-y);
     }
     
     var closestPrimes = function(x, y, pointsObj) {
@@ -90,7 +62,11 @@ fs.readFile('6/DATA', 'utf8', function (err, contents) {
 
         for (var i=0; i<points.length; i++) {
             var m = manhattanDistance(x, y, points[i])
-            if (!closest.distance) { 
+            if (m === 0){
+                closest.distance = 0;
+                closest.points = [];
+                break;
+            } else if (!closest.distance) { 
                 closest.distance = m;
                 closest.points.push(points[i]);
             } else if (m < closest.distance){
@@ -101,9 +77,18 @@ fs.readFile('6/DATA', 'utf8', function (err, contents) {
             }
         } 
 
-     /*   if (closest.points > 1) {
-            return false;
-        } */
+        if (closest.points.length === 0) {
+            closest.displayVal = "P";
+            pointsObj.pointsRaw[x + "," + y].count++;
+        } else if (closest.points.length > 1) {
+            closest.displayVal = ".";
+        } else if (closest.points.length === 1) {
+            closest.displayVal = closest.points[0].id;
+            if (pointsObj.isBoundry(x, y)) {
+                pointsObj.pointsRaw[closest.points[0].x + "," + closest.points[0].y].isInfinite = true;
+            }
+            pointsObj.pointsRaw[closest.points[0].x + "," + closest.points[0].y].count++;
+        }
         return closest;
     }
 
@@ -113,17 +98,27 @@ fs.readFile('6/DATA', 'utf8', function (err, contents) {
 
     var grid = processPoints(points);
 
-    var s = "";
-    for (var i=0; i < grid.values.length; i++) {
-        s = s + " " + grid.values[i].displayVal;
-        
-        if (i % grid.points.largestX === grid.points.largestX-1) {
-            console.log(s);
+    var vals = points.pointsRaw;
+    var largestCount = 0;
+    for (var key in vals) {
+        // skip loop if the property is from prototype
+        if (!vals.hasOwnProperty(key)) continue;
+        if (!vals[key].isInfinite && vals[key].count > largestCount) {
+            largestCount = vals[key].count;
         }
-    } 
-         
-    //console.log(grid);
-   
+    }
+    console.log(largestCount);
+
+    /* var s = "";
+ 
+    for (var y=0; y<points.largestY; y++) {
+        for (var x=0; x<points.largestX; x++) {
+          s = s + "," + grid[x][y].displayVal;
+        }
+        console.log(s);
+        s = "";
+    }  */
+           
 });
 
  
