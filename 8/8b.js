@@ -37,5 +37,5 @@ fs.readFile('8/DATA', 'utf8', function (err, contents) {
 
     var tree = node(treeInput);
 
-    console.log(metaSum);
+    console.log(tree.value);
 })
