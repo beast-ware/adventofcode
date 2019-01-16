@@ -92,7 +92,6 @@ fs.readFile('7/DATA', 'utf8', function (err, contents) {
                 }                
             }
             processNode(){
-
                 if (!this.node) {
                     return;
                 } 
@@ -115,7 +114,6 @@ fs.readFile('7/DATA', 'utf8', function (err, contents) {
                 } 
                 
             }
-    
         }
         // add root nodes to queue
         graph.rootNodes.forEach(function(e) {
