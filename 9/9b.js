@@ -43,7 +43,7 @@ fs.readFile('8/DATA', 'utf8', function (err, contents) {
     }
 
     class Game {
-        con                                                                                                                                                                                                                            structor(playerCount, marbleCount) {
+        constructor(playerCount, marbleCount) {
             this.marbleCount = marbleCount;
             this.currentMarble = {"value":0};
             this.circle = new CircularList(this.currentMarble);
@@ -70,10 +70,12 @@ fs.readFile('8/DATA', 'utf8', function (err, contents) {
                 }
                 this.currentPlayer = this.currentPlayer.next;                
             }
+
+
         }
     }
     
-    var test = new Game(419, 71052);
+    var test = new Game(419, 7105200);
     test.playGame();
   
     var highestScore = 0;

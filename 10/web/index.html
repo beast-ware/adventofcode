@@ -1,0 +1,210 @@
+<html>
+
+<head>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/0.7.2/p5.js"></script>
+    <script>
+        var message = { ready: false };
+        var system;
+
+        // A simple Particle class
+        class Particle {
+            constructor(vector) {
+                this.drawMe = false;
+                this.offsetX = 0;
+                this.offsetY = 0;
+                this.dotSize = 2;
+                this.acceleration = createVector(0, 0);
+                this.velocity = createVector(vector.velocityX, vector.velocityY);
+                this.position = createVector(vector.startX, vector.startY);
+            }
+            run() {
+                this.update();
+                if (this.drawMe) {
+                    this.display();
+                }
+            }
+
+            // Method to update position
+            update() {
+                this.velocity.add(this.acceleration);
+                this.position.add(this.velocity);
+            };
+
+            // Method to display
+            display() {
+                stroke(2, 2);
+                strokeWeight(2);
+                fill(127, 200);
+                ellipse(this.position.x + this.offsetX -100, this.position.y + this.offsetY - 100, this.dotSize, this.dotSize);
+            }
+
+        }
+
+        class ParticleSystem {
+            constructor() {
+                this.particles = [];
+                this.readyToDraw = false;
+                this.runCount = 0;
+                this.canvasInitialized = false;
+            }
+            addParticle(vector) {
+                this.particles.push(new Particle(vector));
+            }
+            run() {
+                for (var i = this.particles.length - 1; i >= 0; i--) {
+                    var p = this.particles[i];
+                    p.run();
+                }
+                this.readyToDraw = this.checkPositioning(); 
+                this.runCount++;
+            }
+            calcCorners() {
+                var corners = {
+                    minX : false,
+                    maxX : false,
+                    minY : false,
+                    maxY : false 
+                };
+                this.particles.forEach(function(p, i) {
+                    if (!corners.minX || p.position.x < corners.minX ) {
+                        corners.minX = p.position.x;
+                    }
+                    if (!corners.miny || p.position.y < corners.minY ) {
+                        corners.minY = p.position.y;
+                    }
+                    if (!corners.maX || p.position.x > corners.maxX ) {
+                        corners.maxX = p.position.x;
+                    }
+                    if (!corners.maxY || p.position.y > corners.maxY ) {
+                        corners.maxY = p.position.y;
+                    }
+                })
+                return corners;
+            }
+            initCanvas() {
+                var corners = this.calcCorners();
+                var width= Math.abs(corners.minX) + Math.abs(corners.maxX) ;
+                var height = Math.abs(corners.minY) + Math.abs(corners.maxY);
+                this.offsetX = Math.abs(corners.minX);
+                this.offsetY = Math.abs(corners.minY); 
+                createCanvas(width, height);
+
+            }
+            drawMe() {
+                if (!this.canvasInitialized) {
+                    this.initCanvas();
+                } 
+                for (var i = this.particles.length - 1; i >= 0; i--) {
+                    var p = this.particles[i];
+                    p.offsetX = this.offsetX;
+                    p.offsetY = this.offsetY;
+                    p.display();
+                }
+
+            }
+            checkPositioning() { // returns true if every particle has an adjacent particle 
+                var me = this;
+                    
+                return this.particles.every(function(p, i) {
+                    return me.particles.some(function(p2) {
+                        if (p.position.x === p2.position.x && p.position.y === p2.position.y) {
+                            return false;
+                        }
+                        return (p.position.x === p2.position.x || p.position.y === p2.position.y);
+                    })
+                })
+            }
+        }
+
+        class Vector {
+            constructor(data) {
+                this.parseData(data);
+            }
+            parseData(data) {
+                this.startX = parseInt(data.substring(10, 16).trim());
+                this.startY = parseInt(data.substring(18, 24).trim());
+                this.velocityX = parseInt(data.substring(36, 38).trim());
+                this.velocityY = parseInt(data.substring(40, 42).trim());
+            }
+        }
+        class Message {
+            constructor(data) {
+                this.largestX = 0;
+                this.largestY = 0;
+                this.ready = false;
+                this.vectors = this.parseData(data);
+                this.ready = true;
+            }
+            parseData(data) {
+                var vectors = [];
+                var d = data.split("\n");
+                var me = this;
+                d.forEach(function (e, i) {
+                    let v = new Vector(e);
+                    vectors.push(v);
+                    if (v.startX > me.largestX) {
+                        me.largestX = v.startX;
+                    }
+                    if (v.startY > me.largestY) {
+                        me.largestY = v.startY;
+                    }
+                })
+                return vectors;
+            }
+        }
+
+        function setup() {
+            var xhttp = new XMLHttpRequest();
+            xhttp.onreadystatechange = function () {
+                if (this.readyState == 4 && this.status == 200) {
+                    // Typical action to be performed when the document is ready:
+                    var data = xhttp.responseText;
+                    message = new Message(data);
+
+                    system = new ParticleSystem();
+                    message.vectors.forEach(function (v, i) {
+                        system.addParticle(v)
+                    })
+                    var seconds = 0;
+                    while (!system.readyToDraw) { // run the system until its ready to draw
+                        system.run();
+                        seconds++;
+                    }
+
+                    system.drawMe();
+                   
+                    document.getElementById("goNext").onclick = function() {
+                        system.run();
+                        seconds++;
+                        console.log(seconds);
+                        system.drawMe();
+                    };
+
+                }
+            };
+            xhttp.open("GET", "DATA", true);
+            xhttp.send();
+        }
+
+        var i = 0;
+
+        function draw() {
+
+        }
+
+        
+    </script>
+    <style>
+        #goNext {
+            position:absolute;
+            top:0;
+            left:0;
+        }
+    </style>
+</head>
+
+<body>
+    <button id="goNext">Next</button>
+</body>
+
+</html>
